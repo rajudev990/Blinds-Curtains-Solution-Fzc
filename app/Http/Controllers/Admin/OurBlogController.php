@@ -1,0 +1,130 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Helpers\ImageHelper;
+use App\Http\Controllers\Controller;
+use App\Models\OurBlog;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
+class OurBlogController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        $data = OurBlog::latest()->get();
+        return view('admin.our-blog.index',compact('data'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view('admin.our-blog.create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'title' => 'required',
+            'description' => 'required',
+            'status' => 'required',
+          
+        ]);
+
+        $banner = $request->hasFile('image') ? ImageHelper::uploadImage($request->file('image')) : null;
+       
+        
+        $contact = OurBlog::create([
+            'image' => $banner,
+            'title' => $request->title,
+            'description' => $request->description,
+            'status' => $request->status
+        ]);
+
+
+        $notification = array(
+            'message' => 'Different Curtains Styles Create Successfully !!!',
+            'alert-type' => 'success'
+        );
+
+        return redirect()->route('admin.curtains-styles.index')->with($notification);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        $data = OurBlog::findOrFail($id);
+       return view('admin.our-blog.view',compact('data'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        $data = OurBlog::findOrFail($id);
+       return view('admin.our-blog.edit',compact('data'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        $data = OurBlog::findOrFail($id);
+
+        $request->validate([
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'status' => 'required',
+            
+        ]);
+       
+        $image = $request->hasFile('image') ? ImageHelper::uploadImage($request->file('image')) : null;
+        
+        if ($request->hasFile('image') && $data->image) {
+            Storage::disk('public')->delete($data->image);
+        }
+        $input = $request->all();
+        if($image){
+            $input['image'] = $image;
+        }
+
+        $data->update($input);
+
+
+        $notification = array(
+            'message' => 'Different Curtains Styles Updated Successfully !!!',
+            'alert-type' => 'success'
+        );
+
+        return redirect()->route('admin.curtains-styles.index')->with($notification);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $data = OurBlog::findOrFail($id);
+        if($data->image) {
+            Storage::disk('public')->delete($data->image);
+        }
+        $data->delete();
+        $notification = array(
+            'message' => 'Different Curtains Styles Delete Successfully !!!',
+            'alert-type' => 'success'
+        );
+        return redirect()->back()->with($notification);
+    }
+}
